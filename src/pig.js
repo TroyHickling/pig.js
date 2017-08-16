@@ -266,6 +266,22 @@
       thumbnailSize: 20,
 
       /**
+       * Type: bool
+       * Default: true
+       * Description: If videos should loop once finished rather than pausing
+       *   on the last frame
+       */
+      videoLoop: true,
+
+      /**
+       * Type: bool
+       * Default: true
+       * Description: Adds controls to the video player to allow easier pause,
+       *   playback, scrubbing, volume controls.
+       */
+      videoControls: true,
+
+      /**
        * Get the URL for an image with the given filename & size.
        *
        * @param {string} filename - The filename of the image.
@@ -861,7 +877,8 @@
 
       // Show thumbnail
       if (!this.thumbnail) {
-        this.thumbnail = new Image();
+        if (this.filename.endsWith('.jpg')) {this.thumbnail = new Image();} else {this.thumbnail = document.createElement('video');}
+        
         this.thumbnail.src = this.pig.settings.urlForSize(this.filename, this.pig.settings.thumbnailSize);
         this.thumbnail.className = this.classNames.thumbnail;
         this.thumbnail.onload = function() {
@@ -878,7 +895,12 @@
 
       // Show full image
       if (!this.fullImage) {
-        this.fullImage = new Image();
+        if (this.filename.endsWith('.jpg')) {this.fullImage = new Image();} 
+                                       else {this.fullImage = document.createElement('video');
+                                             this.fullImage.loop = this.pig.settings.videoLoop;
+                                             this.fullImage.controls = this.pig.settings.videoControls;
+                                             this.fullImage.addEventListener('click', function() {if (this.fullImage.paused) {this.fullImage.play();} else this.fullImage.pause();}.bind(this))}
+
         this.fullImage.src = this.pig.settings.urlForSize(this.filename, this.pig.settings.getImageSize(this.pig.lastWindowWidth));
         this.fullImage.onload = function() {
 
