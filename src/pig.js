@@ -181,6 +181,8 @@
     this.lastWindowWidth = window.innerWidth;
     this.scrollDirection = 'down';
 
+    this.activeTags = []
+
     // List of images that are loading or completely loaded on screen.
     this.visibleImages = [];
 
@@ -321,7 +323,8 @@
 
     // Our global reference for images in the grid.  Note that not all of these
     // images are necessarily in view or loaded.
-    this.images = this._parseImageData(imageData);
+    this.allimages = this._parseImageData(imageData);
+    this.images = this._setImages(this.allimages)
 
     // Inject our boilerplate CSS.
     _injectStyle(this.settings.containerId, this.settings.classPrefix, this.settings.transitionSpeed);
@@ -503,6 +506,21 @@
     // No space below the last image
     this.totalHeight = translateY - this.settings.spaceBetweenImages;
   };
+
+
+  Pig.prototype._tagsMatch = function(image) {
+    if (this.activeTags.every(function(tag) {return (image.tags.indexOf(tag))!=-1})) {return true} else {return false}
+  }
+
+  Pig.prototype._setImages = function(img) {
+    var imgs = []
+    console.log(this)
+    img.forEach(function(i) {
+        console.log(this)
+        if (this._tagsMatch(i)) {imgs.push(i)}
+    }, this)
+    return imgs
+  }
 
 
   /**
@@ -711,6 +729,8 @@
    * @param {array} singleImageData - An array of metadata about each image to
    *                                  include in the grid.
    * @param {string} singleImageData[0].filename - The filename of the image.
+   * @param {string} singleImageData[0].tags - The tags assosciated with
+   *                                               the image.
    * @param {string} singleImageData[0].aspectRatio - The aspect ratio of the
    *                                                  image.
    */
@@ -722,6 +742,7 @@
     // Instance information
     this.aspectRatio = singleImageData.aspectRatio;  // Aspect Ratio
     this.filename = singleImageData.filename;  // Filename
+    this.tags = singleImageData.tags; // Image Tags
     this.index = index;  // The index in the list of images
 
     // The Pig instance
