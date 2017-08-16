@@ -182,6 +182,7 @@
     this.scrollDirection = 'down';
 
     this.activeTags = []
+    this.allTags = []
 
     // List of images that are loading or completely loaded on screen.
     this.visibleImages = [];
@@ -196,6 +197,14 @@
        *   be loaded.
        */
       containerId: 'pig',
+
+      /**
+       * Type: string
+       * Default: 'pig-tags'
+       * Description: The class name of the element inside of which tags should
+       *   be displayed.
+       */
+      containerTagsId: 'pig-tags',
 
       /**
        * Type: string
@@ -321,10 +330,18 @@
       console.error('Could not find element with ID ' + this.settings.containerId);
     }
 
+        // Find the container to display tags on, if it exists.
+    this.containerTags = document.getElementById(this.settings.containerTagsId);
+    if (!this.container) {
+      console.error('Could not find element with ID ' + this.settings.containerTagsId);
+    }
+
     // Our global reference for images in the grid.  Note that not all of these
     // images are necessarily in view or loaded.
-    this.allimages = this._parseImageData(imageData);
-    this.images = this._setImages(this.allimages)
+    this.allImages = this._parseImageData(imageData);
+    this._setImages()
+
+    this._populateTags()
 
     // Inject our boilerplate CSS.
     _injectStyle(this.settings.containerId, this.settings.classPrefix, this.settings.transitionSpeed);
@@ -479,7 +496,6 @@
         row.forEach(function(img) {
 
           var imageWidth = rowHeight * img.aspectRatio;
-
           // This is NOT DOM manipulation.
           img.style = {
             width: parseInt(imageWidth),
@@ -507,19 +523,73 @@
     this.totalHeight = translateY - this.settings.spaceBetweenImages;
   };
 
+  /**
+   * for each availiable image, calls the _tagsMatch function and if the
+   * active tags match the images, adds it to the pool of images.
+   */
+
+   Pig.prototype._populateTags = function() {
+    this.allTags.forEach(function(tag) {
+      var btn = document.createElement("Button");
+      btn.innerHTML = tag;
+      btn.addEventListener("click", this._tagCallBack.bind(this))
+
+      this.containerTags.appendChild(btn);
+    }.bind(this))
+   }
+
+  
+  /**
+   * Callback for the tag buttons, pops/appends the tag to the active
+   * tag list and calls for the display to be updated again.
+   */
+
+   Pig.prototype._tagCallBack = function(btn) {
+    var text = btn.target.innerHTML
+    var index = this.activeTags.indexOf(text);
+    if (index>=0) {this.activeTags.splice(index,1)} else {this.activeTags.push(text)}
+    
+    this._setImages()
+   }
+
+
+  /**
+   * for each availiable image, calls the _tagsMatch function and if the
+   * active tags match the images, adds it to the pool of images.
+   */
+
+  Pig.prototype._setImages = function() {
+    var imgs = []
+    this.allImages.forEach(function(i) {
+        if (this._tagsMatch(i)) {imgs.push(i)}
+    }, this)
+
+    this.images=imgs
+    this.enable()
+    this._excessImages()
+  }
+
+
+  /**
+   * for each availiable image, calls the _tagsMatch function and if the
+   * active tags match the images, adds it to the pool of images.
+   */
+
+  Pig.prototype._excessImages = function() {
+    this.allImages.forEach(function(image) {
+      if (this.images.indexOf(image)) {image.hide()}
+    }.bind(this))
+  }
+
+
+  /**
+   * Iterates through the current active tags and checks if each of them are 
+   * assigned to the provided image. If all active tags are attached to the
+   * image returns true
+   */
 
   Pig.prototype._tagsMatch = function(image) {
     if (this.activeTags.every(function(tag) {return (image.tags.indexOf(tag))!=-1})) {return true} else {return false}
-  }
-
-  Pig.prototype._setImages = function(img) {
-    var imgs = []
-    console.log(this)
-    img.forEach(function(i) {
-        console.log(this)
-        if (this._tagsMatch(i)) {imgs.push(i)}
-    }, this)
-    return imgs
   }
 
 
@@ -615,7 +685,6 @@
     // Here, we loop over every image, determine if it is inside our buffers or
     // no, and either insert it or remove it appropriately.
     this.images.forEach(function(image) {
-
       if (image.style.translateY + image.style.height < minTranslateYPlusHeight ||
             image.style.translateY > maxTranslateY) {
         // Hide Image
@@ -734,6 +803,8 @@
    * @param {string} singleImageData[0].aspectRatio - The aspect ratio of the
    *                                                  image.
    */
+
+
   function ProgressiveImage(singleImageData, index, pig) {
 
     // Global State
@@ -744,6 +815,11 @@
     this.filename = singleImageData.filename;  // Filename
     this.tags = singleImageData.tags; // Image Tags
     this.index = index;  // The index in the list of images
+
+    // Check through all tags of each image and add to list if not alread there
+    this.tags.forEach(function(tag) {
+      if (pig.allTags.indexOf(tag)<0) {pig.allTags.push(tag)}
+    })
 
     // The Pig instance
     this.pig = pig;
